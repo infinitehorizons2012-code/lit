@@ -1,48 +1,98 @@
-# TiengAnhChoTreEm Scraper & Downloader
+# TiengAnhChoTreEm Scraper & Downloader (Little Fox Series)
 
-Công cụ tự động hóa cào dữ liệu và tải tài liệu truyện tranh, audio, PDF từ website [tienganhchotreem.com](https://www.tienganhchotreem.com) (Little Fox series, My First Readers, v.v.).
+Bộ công cụ tự động hóa cào dữ liệu và tải trọn gói: **Video HD (.mp4)**, **Phụ đề (.vtt)** và **Quiz bài tập tương tác** từ trang [tienganhchotreem.com](https://www.tienganhchotreem.com) (Little Fox series, My First Readers 1, v.v.).
 
-## Tính năng
+---
 
-- **Bóc tách tự động**: Lấy tiêu đề, mô tả và toàn bộ liên kết tải về của bài viết.
-- **Vượt bảo vệ & reCAPTCHA v3**: Tích hợp Playwright với cơ chế mô phỏng hành vi tự nhiên (human-like scrolling/hovering) và cơ chế tự động thử lại (retry) khi gặp hạn chế điểm số của robot.
-- **Trích xuất Direct CDN Link**: Tự động giải mã liên kết tải trực tiếp từ CDN server `drive.tienganhchotreem.com`.
-- **Tải file tốc độ cao**: Hỗ trợ tải trực tiếp với thanh tiến trình trực quan (MB, %, tốc độ tải).
+## 🌟 Tính năng nổi bật
 
-## Cài đặt
+1. **Tải Video & Phụ đề**:
+   - Trích xuất luồng m3u8 và tải thành tệp MP4 chất lượng cao thông qua `yt-dlp`.
+   - Tải kèm file phụ đề tiếng Anh (`.vtt`) và ảnh đại diện thumbnail (`.jpg`).
+2. **Tải trọn bộ Quiz bài tập (Đúng như trên web)**:
+   - Gọi trực tiếp API nội bộ để lấy danh sách câu hỏi, đáp án, câu mẫu.
+   - Tải file âm thanh câu hỏi (`.mp3`) và hiệu ứng âm thanh trả lời đúng/sai (`quiz_correct.mp3`, `quiz_incorrect.mp3`).
+   - Tự động tải ảnh sprite ghép và **cắt nhỏ thành từng bức tranh tương ứng cho từng câu hỏi** (như dạng *"Nghe và chọn bức tranh đúng"*).
+   - **Tự động đóng gói giao diện làm bài tập offline (`quiz_interactive.html`)**: Cho phép bé mở trực tiếp trên máy tính để bấm loa nghe và chọn đáp án tương tác mà không cần internet!
+3. **Quản lý danh sách tập linh hoạt**:
+   - Liệt kê toàn bộ danh sách tập trong series (ví dụ My First Readers 1 có 64 tập).
+   - Tải theo tập chỉ định (`--episodes 1`, `--episodes 1,2,3`, `--episodes 1-10`) hoặc tải toàn bộ (`--episodes all`).
+   - Tùy chọn chỉ tải Video (`--video-only`) hoặc chỉ tải Quiz (`--quiz-only`).
 
-1. Cài đặt các thư viện cần thiết:
+---
+
+## ⚙️ Cài đặt
+
 ```bash
 pip install -r requirements.txt
-playwright install chromium
 ```
 
-## Hướng dẫn sử dụng
+*(Lưu ý: Công cụ sử dụng `yt-dlp` và `ffmpeg` để tải video).*
 
-### 1. Chỉ giải mã và lấy liên kết tải trực tiếp (không tải về ổ cứng)
+---
+
+## 🚀 Hướng dẫn sử dụng
+
+### 1. Xem danh sách toàn bộ các tập trong series
 ```bash
-python main.py --url https://www.tienganhchotreem.com/my-first-readers-1/
+python main.py --list
 ```
-Kết quả được xuất ra màn hình và lưu vào tệp `crawl_result.json`.
+Ví dụ xuất ra:
+```
+[01] I See (ID: C0000537)
+[02] Happy Birthday (ID: C0000545)
+...
+[64] Merry Christmas! (ID: C0000557)
+```
 
-### 2. Giải mã và tự động tải toàn bộ file (.zip / .pdf / .mp3)
+### 2. Tải Video và Quiz của 1 tập cụ thể (ví dụ tập 1 "I See")
 ```bash
-python main.py --url https://www.tienganhchotreem.com/my-first-readers-1/ --download
+python main.py --episodes 1
 ```
-Các tệp đã tải sẽ được lưu mặc định trong thư mục `./downloads/`.
 
-### 3. Tùy chỉnh thư mục lưu
+### 3. Tải nhiều tập cùng lúc (ví dụ từ tập 1 đến tập 5)
 ```bash
-python main.py --url https://www.tienganhchotreem.com/my-first-readers-1/ --download --output-dir "D:/LittleFox"
+python main.py --episodes 1-5
 ```
 
-## Cấu trúc thư mục
+### 4. Tải toàn bộ tất cả 64 tập
+```bash
+python main.py --episodes all
+```
 
+### 5. Chỉ tải Quiz (Không tải Video)
+Nếu chỉ cần bộ câu hỏi, âm thanh, hình ảnh và trang làm bài tương tác:
+```bash
+python main.py --episodes 1-10 --quiz-only
 ```
-Lit/
-├── crawler.py          # Module cào chính (Playwright & BeautifulSoup)
-├── main.py             # CLI điều khiển
-├── requirements.txt    # Danh sách thư viện phụ thuộc
-├── .gitignore          # Cấu hình bỏ qua tệp tải về và cache
-└── README.md           # Hướng dẫn sử dụng
+
+### 6. Chỉ tải Video & Phụ đề (Không tải Quiz)
+```bash
+python main.py --episodes 1-10 --video-only
 ```
+
+---
+
+## 📁 Cấu trúc thư mục tải về
+
+Mỗi tập truyện sẽ được tự động đóng gói gọn gàng:
+```
+downloads/
+└── 01_I See/
+    ├── I See.mp4                 # Video hoạt hình HD
+    ├── I See.vtt                 # Phụ đề tiếng Anh
+    ├── thumbnail.jpg             # Ảnh bìa
+    └── quiz/                     # Trọn gói bài tập trắc nghiệm
+        ├── quiz_interactive.html # Trang web làm bài tập tương tác Offline
+        ├── quiz.json             # Dữ liệu câu hỏi & đáp án dạng JSON
+        ├── audio/                # Toàn bộ âm thanh câu hỏi & hiệu ứng âm thanh
+        │   ├── q_1.mp3
+        │   ├── q_2.mp3
+        │   ├── quiz_correct.mp3
+        │   └── quiz_incorrect.mp3
+        └── images/               # Từng bức tranh tương ứng cắt từ sprite sheet
+            ├── question_1.png
+            ├── question_2.png
+            └── ...
+```
+Chỉ cần nhấp đúp vào file `quiz_interactive.html`, bé có thể bấm loa nghe giọng đọc bản xứ và click chọn bức tranh đúng y hệt giao diện trên web.

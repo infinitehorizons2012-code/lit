@@ -1,34 +1,64 @@
 import argparse
 import json
+import sys
 from crawler import TiengAnhChoTreEmScraper
+from video_quiz_crawler import VideoQuizCrawler
+
+def parse_episodes(ep_str: str):
+    if not ep_str:
+        return None
+    res = set()
+    parts = ep_str.split(",")
+    for p in parts:
+        p = p.strip()
+        if "-" in p:
+            start, end = p.split("-")
+            for i in range(int(start), int(end) + 1):
+                res.add(i)
+        elif p.isdigit():
+            res.add(int(p))
+    return sorted(list(res))
 
 def main():
-    parser = argparse.ArgumentParser(description="Crawler for tienganhchotreem.com Little Fox resources")
+    parser = argparse.ArgumentParser(description="Downloader for tienganhchotreem.com (Videos, Quizzes & Documents)")
     parser.add_argument("--url", default="https://www.tienganhchotreem.com/my-first-readers-1/", help="Target post URL to crawl")
-    parser.add_argument("--download", action="store_true", help="Download the resolved files immediately")
+    parser.add_argument("--list", action="store_true", help="List all video/quiz episodes in this series")
+    parser.add_argument("--episodes", default="1", help="Select episode index to download, e.g. '1', '1,2,3', '1-5', or 'all'")
+    parser.add_argument("--video-only", action="store_true", help="Download only videos and subtitles")
+    parser.add_argument("--quiz-only", action="store_true", help="Download only quizzes (questions, images, audio, offline HTML)")
     parser.add_argument("--output-dir", default="downloads", help="Directory to save downloaded files")
-    parser.add_argument("--headless", action="store_true", help="Run browser in headless mode (default: False for anti-bot bypass)")
+    parser.add_argument("--download-doc", action="store_true", help="Download the legacy PDF/MP3 zip archives instead")
 
     args = parser.parse_args()
 
-    scraper = TiengAnhChoTreEmScraper(headless=args.headless, download_dir=args.output_dir)
-    result = scraper.crawl_post(args.url, do_download=args.download)
+    # Legacy PDF/MP3 download mode
+    if args.download_doc:
+        print("[*] Running in Document (PDF/MP3) download mode...")
+        scraper = TiengAnhChoTreEmScraper(download_dir=args.output_dir)
+        scraper.crawl_post(args.url, do_download=True)
+        return
 
-    print("\n================== CRAWL SUMMARY ==================")
-    print(f"Title: {result['title']}")
-    print(f"Source: {result['url']}")
-    for idx, item in enumerate(result.get("results", []), 1):
-        print(f"\nItem #{idx}: {item.get('name')}")
-        print(f"  Intermediate Link: {item.get('url')}")
-        print(f"  Direct Link:       {item.get('direct_link', 'N/A')}")
-        if "local_path" in item:
-            print(f"  Downloaded Path:   {item.get('local_path')}")
+    # Video & Quiz mode
+    crawler = VideoQuizCrawler(output_dir=args.output_dir)
+    playlist = crawler.fetch_playlist(args.url)
 
-    # Save metadata JSON
-    meta_file = "crawl_result.json"
-    with open(meta_file, "w", encoding="utf-8") as f:
-        json.dump(result, f, ensure_ascii=False, indent=2)
-    print(f"\n[+] Results metadata saved to {meta_file}")
+    if args.list:
+        print("\n================== EPISODE PLAYLIST ==================")
+        for idx, item in enumerate(playlist, 1):
+            print(f"[{idx:02d}] {item.get('title')} (ID: {item.get('id')})")
+        print("======================================================")
+        return
+
+    selected_indices = None
+    if args.episodes.lower() != "all":
+        selected_indices = parse_episodes(args.episodes)
+
+    crawler.crawl(
+        args.url,
+        selected_indices=selected_indices,
+        video_only=args.video_only,
+        quiz_only=args.quiz_only
+    )
 
 if __name__ == "__main__":
     main()
